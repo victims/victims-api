@@ -1,8 +1,49 @@
 package com.redhat.victims.domain;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.redhat.victims.fingerprint.Artifact;
+import com.redhat.victims.fingerprint.JarFile;
+import com.redhat.victims.fingerprint.Key;
+
 import io.vertx.core.json.JsonObject;
+
+/*
+ * {
+  "fingerprint" : {
+    "SHA512" : "36ddea854952d397215a32070a1bcd5565547d133701341b1059a8525e3df8fd1af4c2195b6a6aa90ba74a1f0744969f6d1b92d662e0474ba6228ad785e9df09"
+  },
+  "fileName" : "camel-snakeyaml",
+  "record" : {
+    "METADATA" : {
+      "MANIFEST.MF" : {
+        "Implementation-Title" : "Apache Camel",
+        "Implementation-Version" : "2.17.4",
+        "Manifest-Version" : "1.0"
+      },
+      "META-INF/maven/org.apache.camel/camel-snakeyaml/pom.properties" : {
+        "groupId" : "org.apache.camel",
+        "artifactId" : "camel-snakeyaml",
+        "version" : "2.17.4"
+      }
+    },
+    "FILENAME" : "camel-snakeyaml",
+    "CONTENT" : [ {
+      "FILENAME" : "org/apache/camel/component/snakeyaml/SnakeYAMLDataFormat.class",
+      "FILETYPE" : ".class",
+      "FINGERPRINT" : {
+        "SHA512" : "cb1e80599bd7de814b63ad699849360b6c5d6dd33b7b7a2da6df753197eee137541c6bfde704c5ab8521e6b7dfb436d57f102f369fc0af36738668e4d1d0ff55"
+      }
+    } ],
+    "FILETYPE" : "",
+    "EMBEDDED" : [ ],
+    "FINGERPRINT" : {
+      "SHA512" : "36ddea854952d397215a32070a1bcd5565547d133701341b1059a8525e3df8fd1af4c2195b6a6aa90ba74a1f0744969f6d1b92d662e0474ba6228ad785e9df09"
+    }
+  }
+}
+ */
 
 public class Hash {
 	private final String id;
@@ -21,6 +62,24 @@ public class Hash {
     		this.cves = cves;
     		this.submitter = submitter;
     		this.files = files;
+    }
+    
+    public Hash(JarFile jarFile, String cve, String submitter) {
+    	this.id = "";
+    	this.hash = jarFile.getFingerprint().get("SHA512");
+    	this.name = jarFile.getFileName();
+    	this.format = "SHA512";
+    	this.cves = new ArrayList<String>();
+    	this.cves.add(cve);
+    	this.submitter = submitter;
+    	List<Artifact> contents = (List<Artifact>) jarFile.getRecord().get(Key.CONTENT);
+    	this.files = new ArrayList<File>();
+		for( Artifact a : contents) {
+			if(a.containsKey("SHA512")) {
+				File file = new File("SHA512", (String) a.get("SHA512"));
+				this.files.add(file);
+			}
+		}
     }
     
     public Hash(JsonObject json) {

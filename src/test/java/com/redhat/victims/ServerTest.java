@@ -37,9 +37,11 @@ import java.util.function.Consumer;
 @RunWith(VertxUnitRunner.class)
 public class ServerTest{
 
-    private Vertx vertx;
+    private static final String TEST_RESOURCES = "src/test/resources/";
+	private Vertx vertx;
     private Integer port;
     private HttpClient client;
+	private String cve;
     private static MongodProcess MONGO;
     private static int MONGO_PORT = 12345;
 
@@ -111,50 +113,58 @@ public class ServerTest{
         vertx.close(context.asyncAssertSuccess());
     }
 
-/*    @Test
+    @Test
     public void testHealthz(TestContext context) {
-        // This test is asynchronous, so get an async handler to inform the test
-        // when we are done.
         final Async async = context.async();
 
-        // We create a HTTP client and query our application. When we get the
-        // response we check it contains the 'Hello'
-        // message. Then, we call the `complete` method on the async handler to
-        // declare this async (and here the test) done.
-        // Notice that the assertions are made on the 'context' object and are
-        // not Junit assert. This ways it manage the
-        // async aspect of the test the right way.
         vertx.createHttpClient().getNow(port, "localhost", "/healthz", response -> {
             context.assertEquals(response.statusCode(), 200);
             async.complete();
         });
 
-    }*/
+    }
     
     @Test 
-    public void sendFileUploadRequest(TestContext context) throws Exception {
+    public void sendCamelSnakeUploadRequest(TestContext context) throws Exception {
         final Async async = context.async();
-        
-        Buffer fileData = vertx.fileSystem().readFileBlocking("src/test/resources/camel-snakeyaml-2.17.4.jar");
-        String name = "somename";
-        String fileName = "camel-snakeyaml";
+        sendFile("camel-snakeyaml-2.17.4.jar", "2017-3159", 200, "OK");
+        async.complete();
+    }
+
+    @Test 
+    public void send2Struts2UploadRequest(TestContext context) throws Exception{
+    	final Async async = context.async();
+    	sendFile("struts2-core-2.5.12.jar", "2017-9805", 200, "OK");
+    	async.complete();
+    }
+    
+    @Test 
+    public void sendUnsupportedType(TestContext context) throws Exception{
+    	final Async async = context.async();
+    	sendFile("freckles-0.2.1.tar.gz", "2017-1111", 501, "Not Implemented");
+    	async.complete();
+    }
+    
+	private void sendFile(final String fileName, final String cve, int expectedStatusCode, String expectedBody) throws Exception {
+		Buffer fileData = vertx.fileSystem().readFileBlocking(TEST_RESOURCES + fileName);
         String contentType = "application/octet-stream";
-        testRequest(HttpMethod.POST, "/upload", req -> {
+        testRequest(HttpMethod.POST, "/upload/" + cve, req -> {
             String boundary = "dLV9Wyq26L_-JQxk6ferf-RT153LhOO";
             Buffer buffer = Buffer.buffer();
-            String header = "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"" + name
+            String header = "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"" + fileName
                     + "\"; filename=\"" + fileName + "\"\r\n" + "Content-Type: " + contentType + "\r\n"
                     + "Content-Transfer-Encoding: binary\r\n" + "\r\n";
             buffer.appendString(header);
             buffer.appendBuffer(fileData);
+            
             String footer = "\r\n--" + boundary + "--\r\n";
             buffer.appendString(footer);
             req.headers().set("content-length", String.valueOf(buffer.length()));
             req.headers().set("content-type", "multipart/form-data; boundary=" + boundary);
             req.write(buffer);
-        }, 200, "OK", null);
-        async.complete();
-    }
+        }, expectedStatusCode, expectedBody, null);
+	}
+
 
     protected void testRequest(HttpMethod method, String path, Consumer<HttpClientRequest> requestAction,
             int statusCode, String statusMessage,

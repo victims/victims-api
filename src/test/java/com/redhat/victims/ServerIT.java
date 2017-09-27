@@ -1,6 +1,7 @@
 package com.redhat.victims;
 
 import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.put;
 import static org.hamcrest.Matchers.hasItem;
 
 import java.util.List;
@@ -24,21 +25,12 @@ public class ServerIT {
       RestAssured.reset();
     }
 
-    /*
-     * [ {
-  "_id" : "59c8671b3b319269ba2694cb",
-  "id" : "",
-  "hash" : "6532462d68fdce325b6ee0fadb6769511832c6d4524ab6da240add87133ecd1a2811de10892162304228508b4f834a32aeb1d93e1a1e73b2c38c666068cf3395",
-  "name" : "camel-snakeyaml-2.17.3",
-  "format" : "jar",
-  "cves" : [ "2017-3159" ],
-  "submitter" : "adminuser",
-  "files" : [ {
-    "name" : "7c3728d2149df93f39c4d55cf5e3f835fd87aaab",
-    "hash" : "org/apache/camel/component/snakeyaml/SnakeYAMLDataFormat.class"
-  } ]
-} ]
-     */
+/*    @Test
+    public void checkUpsert() {
+    	put("upload/2017-3159").then()
+    	.assertThat()
+    	.statusCode(200);
+    }*/
     
     @Test
     public void checkThatWeCanRetrieveIndividualProduct() {

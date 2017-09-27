@@ -7,8 +7,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bson.Document;
+
 import com.redhat.victims.domain.File;
 import com.redhat.victims.domain.Hash;
+import com.redhat.victims.fingerprint.Algorithms;
 import com.redhat.victims.fingerprint.JarFile;
 
 import io.vertx.core.AbstractVerticle;
@@ -95,6 +98,16 @@ public class Server extends AbstractVerticle {
 		});
 	}
 
+	/*{
+	 * 	"id":"",
+	 * 	"hash":"4787f28235b320d7e9e0945a9e0303fae55e49a2f0e938594fd522939bdab65842cd377a2bb051519e2f5de80a6317297056d427a315c02a3bb6e923de9efa78",
+	 *  "name":"struts2-core-2.5.12.jar",
+	 *  "format":"SHA512",
+	 *  "cves":["2017-9805"],
+	 *  "submitter":"",
+	 *  "files":[{"hash":"c19224b32c115c98e52e5290a6da10cd135fac6097e3bbf7f0e22c303146ac3f7dba70b10b67b6e80d12a6ddf29e803b9c7b79286e5ef2b56b520fa70aa55283","name":"SHA512"}]
+	 */
+	
 	private void upload(RoutingContext ctx) {
 		String cve = ctx.request().getParam("cve");
 		ctx.response().putHeader("Content-Type", "text/plain");
@@ -116,26 +129,38 @@ public class Server extends AbstractVerticle {
 				.setStatusMessage(e.getMessage());
 				break;
 			}
+			//query for existing hash
 			JsonObject query = new JsonObject();
-			query.getString("fingerprint.SHA512", jarFile.getFingerprint().get("SHA512"));
+			query.put("hash", jarFile.getFingerprint().get(Algorithms.SHA512));
+			
 			//TODO add submitter
 			Hash hash = new Hash(jarFile, cve, "");
-			JsonObject update = new JsonObject(Json.encode(hash));
+			//JsonObject update = new JsonObject();
+			JsonObject update = new JsonObject();
+			
+			//only add to cve list if hash is found
+			update.put("$addToSet", cve);
+			
+			//if not found insert other values as well
+			Document inserted = new Document();
+			inserted.append("name", hash.getName());
+			inserted.append("format", hash.getFormat());
+			inserted.append("submitter", hash.getSubmitter());
+			inserted.append("files", hash.getFiles());
+			update.put("$setOnInsert", inserted);
+			
 			List<String> cves = new ArrayList<String>();
 			cves.add(cve);
 			update.put("cves", cves);
 			
-			mongo.find("hashes", query, result -> {
-				if(result.result().isEmpty()) {
-					mongo.insert("hashes", update, updateResult ->{
-						if(updateResult.failed()) {
-							ctx.response().setStatusCode(500)
-								.setStatusMessage("Failed to add hash");
-						}else {
-							ctx.response().setStatusCode(200);
-						}
-					});
-				}//else update db with new CVE
+			mongo.updateCollectionWithOptions("hashes", query, update, new UpdateOptions(true), updateResult ->{
+				if(updateResult.failed()) {
+					ctx.response().setStatusCode(500)
+						.setStatusMessage("Failed to add hash");
+				}else {
+					ctx.response().setStatusCode(200);
+					System.out.println("--------Saving document: " + Json.encode(hash));
+				}
 			});
 		}
 		ctx.response().end();

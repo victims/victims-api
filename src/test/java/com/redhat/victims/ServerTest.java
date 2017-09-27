@@ -20,6 +20,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -30,6 +31,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.sql.ResultSet;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -42,6 +45,7 @@ public class ServerTest{
     private Integer port;
     private HttpClient client;
 	private String cve;
+	private MongoClient mongo;
     private static MongodProcess MONGO;
     private static int MONGO_PORT = 12345;
 
@@ -54,6 +58,7 @@ public class ServerTest{
 
         MongodExecutable mongodExecutable = starter.prepare(mongodConfig);
         MONGO = mongodExecutable.start();
+
     }
 
     @AfterClass
@@ -90,6 +95,8 @@ public class ServerTest{
         vertx.deployVerticle(Server.class.getName(), options, context.asyncAssertSuccess());
         
         client = vertx.createHttpClient(getHttpClientOptions());
+        
+        mongo = MongoClient.createShared(vertx, vertx.getOrCreateContext().config());
 
     }
     
@@ -128,6 +135,15 @@ public class ServerTest{
     public void sendCamelSnakeUploadRequest(TestContext context) throws Exception {
         final Async async = context.async();
         sendFile("camel-snakeyaml-2.17.4.jar", "2017-3159", 200, "OK");
+        JsonObject query = new JsonObject();
+        query.put("hash", "6532462d68fdce325b6ee0fadb6769511832c6d4524ab6da240add87133ecd1a2811de10892162304228508b4f834a32aeb1d93e1a1e73b2c38c666068cf3395");
+		mongo.find("hashes", query, result ->{
+			List<JsonObject> results = result.result();
+			assertEquals(1, results.size());
+			for( JsonObject obj : results) {
+				System.out.println(obj.encodePrettily());
+			}
+		});
         async.complete();
     }
 
@@ -146,23 +162,28 @@ public class ServerTest{
     }
     
 	private void sendFile(final String fileName, final String cve, int expectedStatusCode, String expectedBody) throws Exception {
+		
+        testRequest(HttpMethod.POST, "/upload/" + cve, req -> {
+            fileUploadRequest(fileName, req);
+        }, expectedStatusCode, expectedBody, null);
+	}
+
+	private void fileUploadRequest(final String fileName, HttpClientRequest req) {
 		Buffer fileData = vertx.fileSystem().readFileBlocking(TEST_RESOURCES + fileName);
         String contentType = "application/octet-stream";
-        testRequest(HttpMethod.POST, "/upload/" + cve, req -> {
-            String boundary = "dLV9Wyq26L_-JQxk6ferf-RT153LhOO";
-            Buffer buffer = Buffer.buffer();
-            String header = "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"" + fileName
-                    + "\"; filename=\"" + fileName + "\"\r\n" + "Content-Type: " + contentType + "\r\n"
-                    + "Content-Transfer-Encoding: binary\r\n" + "\r\n";
-            buffer.appendString(header);
-            buffer.appendBuffer(fileData);
-            
-            String footer = "\r\n--" + boundary + "--\r\n";
-            buffer.appendString(footer);
-            req.headers().set("content-length", String.valueOf(buffer.length()));
-            req.headers().set("content-type", "multipart/form-data; boundary=" + boundary);
-            req.write(buffer);
-        }, expectedStatusCode, expectedBody, null);
+		String boundary = "dLV9Wyq26L_-JQxk6ferf-RT153LhOO";
+		Buffer buffer = Buffer.buffer();
+		String header = "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"" + fileName
+		        + "\"; filename=\"" + fileName + "\"\r\n" + "Content-Type: " + contentType + "\r\n"
+		        + "Content-Transfer-Encoding: binary\r\n" + "\r\n";
+		buffer.appendString(header);
+		buffer.appendBuffer(fileData);
+		
+		String footer = "\r\n--" + boundary + "--\r\n";
+		buffer.appendString(footer);
+		req.headers().set("content-length", String.valueOf(buffer.length()));
+		req.headers().set("content-type", "multipart/form-data; boundary=" + boundary);
+		req.write(buffer);
 	}
 
 

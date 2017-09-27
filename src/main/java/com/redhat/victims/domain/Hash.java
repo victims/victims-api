@@ -2,10 +2,13 @@ package com.redhat.victims.domain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.redhat.victims.fingerprint.Artifact;
+import com.redhat.victims.fingerprint.Fingerprint;
 import com.redhat.victims.fingerprint.JarFile;
 import com.redhat.victims.fingerprint.Key;
+import com.redhat.victims.fingerprint.Algorithms;
 
 import io.vertx.core.json.JsonObject;
 
@@ -66,7 +69,7 @@ public class Hash {
     
     public Hash(JarFile jarFile, String cve, String submitter) {
     	this.id = "";
-    	this.hash = jarFile.getFingerprint().get("SHA512");
+    	this.hash = jarFile.getFingerprint().get(Algorithms.SHA512);
     	this.name = jarFile.getFileName();
     	this.format = "SHA512";
     	this.cves = new ArrayList<String>();
@@ -75,8 +78,9 @@ public class Hash {
     	List<Artifact> contents = (List<Artifact>) jarFile.getRecord().get(Key.CONTENT);
     	this.files = new ArrayList<File>();
 		for( Artifact a : contents) {
-			if(a.containsKey("SHA512")) {
-				File file = new File("SHA512", (String) a.get("SHA512"));
+			Map<Algorithms, String> fingerprint = (Map<Algorithms, String>) a.get(Key.FINGERPRINT);
+			if(fingerprint.containsKey(Algorithms.SHA512)) {
+				File file = new File("SHA512", (String) fingerprint.get(Algorithms.SHA512));
 				this.files.add(file);
 			}
 		}

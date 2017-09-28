@@ -6,7 +6,9 @@ import de.flapdoodle.embed.mongo.MongodStarter;
 import de.flapdoodle.embed.mongo.config.IMongodConfig;
 import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
 import de.flapdoodle.embed.mongo.config.Net;
-import de.flapdoodle.embed.mongo.distribution.Version;
+import de.flapdoodle.embed.mongo.distribution.Feature;
+import de.flapdoodle.embed.mongo.distribution.Versions;
+import de.flapdoodle.embed.process.distribution.GenericVersion;
 import de.flapdoodle.embed.process.runtime.Network;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
@@ -20,15 +22,18 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+
+import org.bson.Document;
 import org.junit.*;
 import org.junit.runner.RunWith;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.sql.ResultSet;
@@ -37,15 +42,27 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static com.mongodb.client.model.Filters.eq;
+
+import com.mongodb.Block;
+import com.mongodb.async.SingleResultCallback;
+import com.mongodb.async.client.MongoClient;
+import com.mongodb.async.client.MongoClients;
+import com.mongodb.async.client.MongoCollection;
+import com.mongodb.async.client.MongoDatabase;
+import com.redhat.victims.domain.Hash;
+import com.redhat.victims.fingerprint.JarFile;
+
 @RunWith(VertxUnitRunner.class)
 public class ServerTest{
 
     private static final String TEST_RESOURCES = "src/test/resources/";
+    private static final String SNAKEYAML = "camel-snakeyaml-2.17.4.jar";;
 	private Vertx vertx;
     private Integer port;
     private HttpClient client;
 	private String cve;
-	private MongoClient mongo;
+	private static MongoClient mongo;
     private static MongodProcess MONGO;
     private static int MONGO_PORT = 12345;
 
@@ -53,12 +70,28 @@ public class ServerTest{
     public static void initialize() throws IOException {
         MongodStarter starter = MongodStarter.getDefaultInstance();
 
-        IMongodConfig mongodConfig = new MongodConfigBuilder().version(Version.Main.PRODUCTION)
+        IMongodConfig mongodConfig = new MongodConfigBuilder()
+                .version(Versions.withFeatures(new GenericVersion("3.2.4"),Feature.SYNC_DELAY))
                 .net(new Net(MONGO_PORT, Network.localhostIsIPv6())).build();
 
         MongodExecutable mongodExecutable = starter.prepare(mongodConfig);
         MONGO = mongodExecutable.start();
 
+        mongo = MongoClients.create("mongodb://localhost:" + MONGO_PORT);
+        MongoDatabase testDB = mongo.getDatabase("victims-it");
+        MongoCollection<Document> hashes = testDB.getCollection("hashes");
+        
+        JarFile jarFile = new JarFile(TEST_RESOURCES + SNAKEYAML);
+        Hash hash = new Hash(jarFile, "2017-9999", "");
+        hashes.insertOne(hash.asDocument(), new SingleResultCallback<Void>() {
+
+            @Override
+            public void onResult(Void result, Throwable arg1) {
+                //Do nothing
+                
+            }
+            
+        });
     }
 
     @AfterClass
@@ -95,8 +128,6 @@ public class ServerTest{
         vertx.deployVerticle(Server.class.getName(), options, context.asyncAssertSuccess());
         
         client = vertx.createHttpClient(getHttpClientOptions());
-        
-        mongo = MongoClient.createShared(vertx, vertx.getOrCreateContext().config());
 
     }
     
@@ -135,15 +166,19 @@ public class ServerTest{
     public void sendCamelSnakeUploadRequest(TestContext context) throws Exception {
         final Async async = context.async();
         sendFile("camel-snakeyaml-2.17.4.jar", "2017-3159", 200, "OK");
-        JsonObject query = new JsonObject();
-        query.put("hash", "6532462d68fdce325b6ee0fadb6769511832c6d4524ab6da240add87133ecd1a2811de10892162304228508b4f834a32aeb1d93e1a1e73b2c38c666068cf3395");
-		mongo.find("hashes", query, result ->{
-			List<JsonObject> results = result.result();
-			assertEquals(1, results.size());
-			for( JsonObject obj : results) {
-				System.out.println(obj.encodePrettily());
-			}
-		});
+        MongoDatabase testDB = mongo.getDatabase("victims-it");
+        MongoCollection<Document> hashes = testDB.getCollection("hashes");
+        hashes.find(eq("hash", "3cfc3c06a141ba3a43c6c0a01567dbb7268839f75e6367ae0346bab90507ea09c9ecd829ecec3f030ed727c0beaa09da8c08835a8ddc27054a03f800fa049a0a"))
+        .first(new SingleResultCallback<Document>() {
+
+            @Override
+            public void onResult(Document doc, Throwable arg1) {
+                List<String> cves = (List<String>) doc.get("cves");
+                context.assertTrue(cves.contains("2017-9999"));
+                context.assertTrue(cves.contains("2017-3159"));
+            }
+            
+        });
         async.complete();
     }
 

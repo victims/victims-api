@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.bson.BsonArray;
+import org.bson.BsonValue;
+import org.bson.Document;
+
 import com.redhat.victims.fingerprint.Artifact;
 import com.redhat.victims.fingerprint.Fingerprint;
 import com.redhat.victims.fingerprint.JarFile;
@@ -84,6 +88,22 @@ public class Hash {
 				this.files.add(file);
 			}
 		}
+    }
+    
+    public Document asDocument() {
+        return asDocument(true);
+    }
+    
+    public Document asDocument(boolean includeCve) {
+        Document doc = new Document();
+        doc.append("name", getName());
+        doc.append("format", getFormat());
+        doc.append("submitter", getSubmitter());
+        doc.append("hash", getHash());
+        if(includeCve) {
+            doc.append("cves", getCves());
+        }
+        return doc;
     }
     
     public Hash(JsonObject json) {

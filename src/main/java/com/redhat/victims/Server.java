@@ -129,37 +129,30 @@ public class Server extends AbstractVerticle {
 				.setStatusMessage(e.getMessage());
 				break;
 			}
-			//query for existing hash
-			JsonObject query = new JsonObject();
-			query.put("hash", jarFile.getFingerprint().get(Algorithms.SHA512));
-			
 			//TODO add submitter
 			Hash hash = new Hash(jarFile, cve, "");
-			//JsonObject update = new JsonObject();
+			//query for existing hash
+			JsonObject query = new JsonObject();
+			query.put("hash", hash.getHash());
+			
 			JsonObject update = new JsonObject();
 			
 			//only add to cve list if hash is found
-			update.put("$addToSet", cve);
+			JsonObject newCve = new JsonObject();
+			newCve.put("cves", cve);
+			update.put("$addToSet", newCve);
 			
 			//if not found insert other values as well
-			Document inserted = new Document();
-			inserted.append("name", hash.getName());
-			inserted.append("format", hash.getFormat());
-			inserted.append("submitter", hash.getSubmitter());
-			inserted.append("files", hash.getFiles());
-			update.put("$setOnInsert", inserted);
+			//inserted.append("files", hash.getFiles());
+			update.put("$setOnInsert", hash.asDocument());
 			
-			List<String> cves = new ArrayList<String>();
-			cves.add(cve);
-			update.put("cves", cves);
-			
+			System.out.println("-----doing update query");
 			mongo.updateCollectionWithOptions("hashes", query, update, new UpdateOptions(true), updateResult ->{
 				if(updateResult.failed()) {
 					ctx.response().setStatusCode(500)
 						.setStatusMessage("Failed to add hash");
 				}else {
 					ctx.response().setStatusCode(200);
-					System.out.println("--------Saving document: " + Json.encode(hash));
 				}
 			});
 		}

@@ -30,7 +30,7 @@ import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.mongo.UpdateOptions;
 
 public class Server extends AbstractVerticle {
-	private static final String COLLECTION = "hashes";
+	protected static final String HASHES_COLLECTION = "hashes";
 	// mongo = MongoClient.createShared(vertx, config());
 	private MongoClient mongo;
 
@@ -89,7 +89,7 @@ public class Server extends AbstractVerticle {
 
 	private void getByCombined(RoutingContext routingContext) {
 		String hash = routingContext.request().getParam("hash");
-		mongo.find(COLLECTION, new JsonObject("{\"hash\":\"" + hash + "\"}"), results -> {
+		mongo.find(HASHES_COLLECTION, new JsonObject("{\"hash\":\"" + hash + "\"}"), results -> {
 			List<JsonObject> objects = results.result();
 			String result = Json.encodePrettily(objects);
 			System.out.println(result);
@@ -143,11 +143,10 @@ public class Server extends AbstractVerticle {
 			update.put("$addToSet", newCve);
 			
 			//if not found insert other values as well
-			//inserted.append("files", hash.getFiles());
-			update.put("$setOnInsert", hash.asDocument());
+			update.put("$setOnInsert", hash.asDocument(false));
 			
 			System.out.println("-----doing update query");
-			mongo.updateCollectionWithOptions("hashes", query, update, new UpdateOptions(true), updateResult ->{
+			mongo.updateCollectionWithOptions(HASHES_COLLECTION, query, update, new UpdateOptions(true), updateResult ->{
 				if(updateResult.failed()) {
 					ctx.response().setStatusCode(500)
 						.setStatusMessage("Failed to add hash");

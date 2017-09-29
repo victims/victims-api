@@ -27,6 +27,11 @@
 			<artifactId>victims-lib</artifactId>
 			<version>1.3.6</version>
 		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>1.1.5</version>
+		</dependency>
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>junit</groupId>

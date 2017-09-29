@@ -18,6 +18,7 @@ public class ServerIT {
     public static void configureRestAssured() {
       RestAssured.baseURI = "http://localhost";
       RestAssured.port = Integer.getInteger("http.port", 8082);
+      //TODO Craft a put here so we can test get by hash
     }
 
     @AfterClass
@@ -33,9 +34,14 @@ public class ServerIT {
     }*/
     
     @Test
+    public void testHealthz() {
+        get("healthz").then().assertThat().statusCode(200);
+    }
+    
+    @Test
     public void checkThatWeCanRetrieveIndividualProduct() {
 
-        String hash = "6532462d68fdce325b6ee0fadb6769511832c6d4524ab6da240add87133ecd1a2811de10892162304228508b4f834a32aeb1d93e1a1e73b2c38c666068cf3395";
+        String hash = "3cfc3c06a141ba3a43c6c0a01567dbb7268839f75e6367ae0346bab90507ea09c9ecd829ecec3f030ed727c0beaa09da8c08835a8ddc27054a03f800fa049a0a";
       // Now get the individual resource and check the content
         get("/api/cves/" + hash).then()
        .assertThat()

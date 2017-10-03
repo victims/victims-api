@@ -58,8 +58,8 @@ import com.redhat.victims.fingerprint.JarFile;
 @RunWith(VertxUnitRunner.class)
 public class ServerTest {
 
+	protected static final String TEST_RESOURCES = "src/test/resources/";
     private static final String TEST_DB = "victims-it";
-    private static final String TEST_RESOURCES = "src/test/resources/";
     private static final String SNAKEYAML = "camel-snakeyaml-2.17.4.jar";;
     private Vertx vertx;
     private Integer port;

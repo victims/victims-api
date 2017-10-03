@@ -1,19 +1,19 @@
 package com.redhat.victims.domain;
 
 public class File {
-	private String type;
+	private String name;
 	private String hash;
 	
 	public File(String name, String hash) {
-		this.type = name;
+		this.name = name;
 		this.hash = hash;
 	}
 	
 	public String getName() {
-		return type;
+		return name;
 	}
 	public void setName(String name) {
-		this.type = name;
+		this.name = name;
 	}
 	public String getHash() {
 		return hash;

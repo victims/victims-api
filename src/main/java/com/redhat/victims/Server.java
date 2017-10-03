@@ -89,12 +89,11 @@ public class Server extends AbstractVerticle {
 
 	private void getByCombined(RoutingContext routingContext) {
 		String hash = routingContext.request().getParam("hash");
-		mongo.find(HASHES_COLLECTION, new JsonObject("{\"hash\":\"" + hash + "\"}"), results -> {
-			List<JsonObject> objects = results.result();
-			String result = Json.encodePrettily(objects);
-			System.out.println(result);
+		JsonObject projection = new JsonObject("{\"_id\":0, \"cves\":1}");
+		mongo.findOne(HASHES_COLLECTION, new JsonObject("{\"hash\":\"" + hash + "\"}"), projection, results -> {
+			JsonObject result = results.result();
 			routingContext.response().setStatusCode(200).putHeader("content-type", "application/json; charset=utf-8")
-					.end(result);
+					.end(Json.encodePrettily(result));
 		});
 	}
 

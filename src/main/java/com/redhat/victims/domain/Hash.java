@@ -84,7 +84,9 @@ public class Hash {
 		for( Artifact a : contents) {
 			Map<Algorithms, String> fingerprint = (Map<Algorithms, String>) a.get(Key.FINGERPRINT);
 			if(fingerprint.containsKey(Algorithms.SHA512)) {
-				File file = new File("SHA512", (String) fingerprint.get(Algorithms.SHA512));
+				String filename = a.filename();
+				String withoutExtention = filename.substring(0, filename.lastIndexOf('.'));
+				File file = new File(withoutExtention, (String) fingerprint.get(Algorithms.SHA512));
 				this.files.add(file);
 			}
 		}
@@ -102,6 +104,15 @@ public class Hash {
         doc.append("hash", getHash());
         if(includeCve) {
             doc.append("cves", getCves());
+        }
+        if(!files.isEmpty()) {
+        	List<Document> newFiles = new ArrayList();
+        	for( File f : files) {
+        		Document theFile = new Document();
+        		theFile.append(f.getName(), f.getHash());
+        		newFiles.add(theFile);
+        	}
+        	doc.append("files", newFiles);
         }
         return doc;
     }

@@ -1,15 +1,12 @@
 package com.redhat.victims;
 
 import static io.restassured.RestAssured.get;
-import static io.restassured.RestAssured.put;
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.hasItem;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

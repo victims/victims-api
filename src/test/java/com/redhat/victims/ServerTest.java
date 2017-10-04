@@ -36,12 +36,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.Base64;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -64,7 +66,6 @@ public class ServerTest {
     private Vertx vertx;
     private Integer port;
     private HttpClient client;
-    private String cve;
     private static MongoClient mongo;
     private static MongodProcess MONGO;
     private static int MONGO_PORT = 12345;
@@ -110,7 +111,8 @@ public class ServerTest {
         socket.close();
 
         DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)
-                .put("db_name", TEST_DB).put("connection_string", "mongodb://localhost:" + MONGO_PORT));
+                .put("db_name", TEST_DB).put("connection_string", "mongodb://localhost:" + MONGO_PORT)
+        		.put("testing", true));
 
         // We pass the options as the second parameter of the deployVerticle
         // method.
@@ -236,6 +238,8 @@ public class ServerTest {
         buffer.appendString(footer);
         req.headers().set("content-length", String.valueOf(buffer.length()));
         req.headers().set("content-type", "multipart/form-data; boundary=" + boundary);
+        String encodedCredentials = Base64.getEncoder().encodeToString("testuser:testpass".getBytes());
+        req.headers().set("Authorization", "Basic " + encodedCredentials);
         req.write(buffer);
     }
 

@@ -6,21 +6,30 @@
 	<artifactId>victims-v2</artifactId>
 	<version>1.0-SNAPSHOT</version>
 
+	<properties>
+		<vertx-version>3.4.2</vertx-version>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-core</artifactId>
-			<version>3.3.3</version>
+			<version>${vertx-version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-web</artifactId>
-			<version>3.3.3</version>
+			<version>${vertx-version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-mongo-client</artifactId>
-			<version>3.3.3</version>
+			<version>${vertx-version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-web-client</artifactId>
+			<version>${vertx-version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.redhat.victims</groupId>

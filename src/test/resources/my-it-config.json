@@ -1,5 +1,6 @@
 {
   "http.port": ${http.port},
   "db_name": "victims-it",
-  "connection_string": "mongodb://localhost:37017"
+  "connection_string": "mongodb://localhost:37017",
+  "testing": true
 }

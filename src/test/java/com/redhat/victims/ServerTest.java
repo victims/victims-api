@@ -1,5 +1,34 @@
 package com.redhat.victims;
 
+import static com.mongodb.client.model.Filters.eq;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.Base64;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+import org.bson.Document;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import com.mongodb.async.AsyncBatchCursor;
+import com.mongodb.async.SingleResultCallback;
+import com.mongodb.async.client.MongoClient;
+import com.mongodb.async.client.MongoClients;
+import com.mongodb.async.client.MongoCollection;
+import com.mongodb.async.client.MongoDatabase;
+import com.redhat.victims.domain.Hash;
+import com.redhat.victims.fingerprint.JarFile;
+
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodProcess;
 import de.flapdoodle.embed.mongo.MongodStarter;
@@ -11,51 +40,17 @@ import de.flapdoodle.embed.mongo.distribution.Versions;
 import de.flapdoodle.embed.process.distribution.GenericVersion;
 import de.flapdoodle.embed.process.runtime.Network;
 import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-
-import org.bson.Document;
-import org.junit.*;
-import org.junit.runner.RunWith;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.ServerSocket;
-import java.sql.ResultSet;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.Base64;
-
-import static com.mongodb.client.model.Filters.eq;
-
-import com.mongodb.Block;
-import com.mongodb.async.AsyncBatchCursor;
-import com.mongodb.async.SingleResultCallback;
-import com.mongodb.async.client.MongoClient;
-import com.mongodb.async.client.MongoClients;
-import com.mongodb.async.client.MongoCollection;
-import com.mongodb.async.client.MongoDatabase;
-import com.redhat.victims.domain.Hash;
-import com.redhat.victims.fingerprint.JarFile;
 
 @RunWith(VertxUnitRunner.class)
 public class ServerTest {
@@ -89,16 +84,7 @@ public class ServerTest {
         MONGO.stop();
     }
 
-    /**
-     * Before executing our test, let's deploy our verticle.
-     * <p/>
-     * This method instantiates a new Vertx and deploy the verticle. Then, it
-     * waits in the verticle has successfully completed its start sequence
-     * (thanks to `context.asyncAssertSuccess`).
-     *
-     * @param context
-     *            the test context.
-     */
+
     @Before
     public void setUp(TestContext context) throws IOException {
         vertx = Vertx.vertx();
@@ -114,8 +100,6 @@ public class ServerTest {
                 .put("db_name", TEST_DB).put("connection_string", "mongodb://localhost:" + MONGO_PORT)
         		.put("testing", true));
 
-        // We pass the options as the second parameter of the deployVerticle
-        // method.
         vertx.deployVerticle(Server.class.getName(), options, context.asyncAssertSuccess());
 
         client = vertx.createHttpClient(getHttpClientOptions());

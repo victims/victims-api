@@ -42,15 +42,27 @@ public class Server extends AbstractVerticle {
 	
 	@Override
 	public void start(Future<Void> fut) {
-		mongo = MongoClient.createShared(vertx, config());
+		JsonObject config = config();
+		//config keys can be found at http://vertx.io/docs/vertx-mongo-client/java/
+		setFromEnv(config, "host", "MONGODB_HOST");
+		setFromEnv(config, "db_name", "MONGODB_DATABASE");
+		setFromEnv(config, "port", "MONGODB_PORT");
+		mongo = MongoClient.createShared(vertx, config);
 
 		startWebApp((http) -> completeStartup(http, fut));
 		
 		client = WebClient.create(vertx);
 		
-		Boolean testing = config().getBoolean("testing");
+		Boolean testing = config.getBoolean("testing");
 		if(testing != null)
 			isTestingEnv = testing;
+	}
+
+	private void setFromEnv(JsonObject config, String configKey, String envVarName) {
+		String mongoDBHost = System.getenv(envVarName);
+		if(mongoDBHost != null) {
+			config.put(configKey, mongoDBHost);
+		}
 	}
 
 	private void startWebApp(Handler<AsyncResult<HttpServer>> next) {

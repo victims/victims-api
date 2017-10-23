@@ -26,10 +26,10 @@ deps:
 	govendor sync
 
 victims-api:
-	go build -ldflags '${LDFLAGS}' -o victims-api cmd/main.go
+	govendor build -ldflags '${LDFLAGS}' -o victims-api cmd/main.go
 
 static-victims-api:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build --ldflags '-extldflags "-static" ${LDFLAGS}' -a -o victims-api cmd/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 govendor build --ldflags '-extldflags "-static" ${LDFLAGS}' -a -o victims-api cmd/main.go
 
 clean:
 	go clean
@@ -42,6 +42,7 @@ gofmt:
 	gofmt -l api/ cmd/ types/
 
 golint:
+	go get github.com/golang/lint/golint
 	golint api/ cmd/ types/
 
 lint: gofmt golint

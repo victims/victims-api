@@ -20,7 +20,7 @@ before_script:
   - rsync -az ${TRAVIS_BUILD_DIR}/ $HOME/gopath/src/github.com/victims/victims-api/
 
 script:
-  - make lint
+  - make check
   - make deps
   - make victims-api
   - make static-victims-api

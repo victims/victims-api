@@ -75,6 +75,24 @@
 			"revisionTime": "2017-11-01T02:18:41Z"
 		},
 		{
+			"checksumSHA1": "rQPrwijovfFM4dKp3ebK9lWKGOc=",
+			"path": "github.com/victims/victims-common/db",
+			"revision": "3e0576cd6b2d75b2ea88fe60012277beae03269a",
+			"revisionTime": "2017-11-03T18:17:44Z"
+		},
+		{
+			"checksumSHA1": "uR3R/pCsxU/gxeoUufkmU6UWswY=",
+			"path": "github.com/victims/victims-common/log",
+			"revision": "3e0576cd6b2d75b2ea88fe60012277beae03269a",
+			"revisionTime": "2017-11-03T18:17:44Z"
+		},
+		{
+			"checksumSHA1": "cnMDDgCDj4PceybMs03eNi5HtRM=",
+			"path": "github.com/victims/victims-common/types",
+			"revision": "3e0576cd6b2d75b2ea88fe60012277beae03269a",
+			"revisionTime": "2017-11-03T18:17:44Z"
+		},
+		{
 			"checksumSHA1": "JFeS7JlZ3ntfWcTfyQE0q9KgRi8=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "46eaec7899b1dd945c25db17c78ba3f0c58a6613",

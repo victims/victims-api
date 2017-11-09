@@ -51,41 +51,38 @@ func SimpleSearch(c *gin.Context) {
 	c.AbortWithStatus(404)
 }
 
-// deepSearch executes searching across all hash fields
+// deepSearch checks if all the class file hashes match an entry in db
 func deepSearch(requestedHash types.MultipleHashRequest) types.CVEs {
 	// Get the collection and set up some defaults for use later
 	col, _ := db.GetCollection("hashes")
 	count := 0
 	cves := types.CVEs{}
+	results := []types.Hash{}
+	elements := []bson.M{}
 
 	// For each requested hash
-	for _, singleHash := range requestedHash.Hashes {
+		for _, singleHash := range requestedHash.Hashes {
 		log.Logger.Infof("Looking for %s\n\n", singleHash.Hash)
-		results := []types.Hash{}
-		// Search for hashes inside stored structures
-		// TODO: Is this the best way?
-		col.Find(
-			bson.M{"$or": []interface{}{
-				bson.M{"hash": singleHash.Hash},
-				bson.M{"combinedhash": singleHash.Hash},
-				bson.M{"filehashes": bson.M{"$elemMatch": bson.M{"hash": singleHash.Hash}}},
-			},
-			},
-		).All(&results)
-		// col.Find(
-		// 	bson.M{
-		// 		"filehashes": bson.M{
-		// 			"$elemMatch": bson.M{
-		// 				"hash": singleHash.Hash}}}).All(&results)
+		elements = append(elements, bson.M{"$elemMatch":bson.M{"hash": singleHash.Hash}})
+	}
 
-		// If we have results...
-		if results != nil && len(results) > 0 {
-			count = count + len(results)
-			// For each hash found append it's cves to our CVEs instance
-			for _, foundHash := range results {
-				log.Logger.Infof("FoundHash: %#v", foundHash)
-				cves.Append(foundHash.Cves)
-			}
+	query := col.Find(
+		bson.M{"files": bson.M{"$all": elements,
+		}},
+	)
+	err := query.All(&results)
+
+	if err != nil {
+		log.Logger.Error(err)
+	}
+
+	// If we have results...
+	if results != nil && len(results) > 0 {
+		count = count + len(results)
+		// For each hash found append it's cves to our CVEs instance
+		for _, foundHash := range results {
+			log.Logger.Infof("FoundHash: %#v", foundHash)
+			cves.Append(foundHash.Cves)
 		}
 	}
 	log.Logger.Debugf("Found %d hashes", count)

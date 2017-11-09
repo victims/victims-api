@@ -22,5 +22,6 @@ before_script:
 script:
   - make check
   - make deps
+  - govendor list
   - make victims-api
   - make static-victims-api

@@ -27,7 +27,7 @@ help:
 	@echo "	check: Run all checks against the code"
 
 deps:
-	go get github.com/kardianos/govendor
+	go get -u github.com/kardianos/govendor
 	govendor sync
 
 victims-api:

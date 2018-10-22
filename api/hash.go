@@ -61,14 +61,13 @@ func deepSearch(requestedHash types.MultipleHashRequest) types.CVEs {
 	elements := []bson.M{}
 
 	// For each requested hash
-		for _, singleHash := range requestedHash.Hashes {
+	for _, singleHash := range requestedHash.Hashes {
 		log.Logger.Infof("Looking for %s\n\n", singleHash.Hash)
-		elements = append(elements, bson.M{"$elemMatch":bson.M{"hash": singleHash.Hash}})
+		elements = append(elements, bson.M{"$elemMatch": bson.M{"hash": singleHash.Hash}})
 	}
 
 	query := col.Find(
-		bson.M{"files": bson.M{"$all": elements,
-		}},
+		bson.M{"files": bson.M{"$all": elements}},
 	)
 	err := query.All(&results)
 
